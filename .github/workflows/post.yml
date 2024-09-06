@@ -18,3 +18,9 @@ jobs:
       - run: npm run build
       - name: Send post
         run: npm start
+        env:
+          BSKY_HANDLE: ${{ secrets.BSKY_HANDLE }}
+          BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          BOT_NAME: ${{ secrets.BOT_NAME }}
