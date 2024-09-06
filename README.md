@@ -1,7 +1,3 @@
-Sure! Here's an updated version of the README that includes a section on creating the necessary table in Supabase/PostgreSQL for the `saveRepliedPost` function.
-
----
-
 # Bot Automation Project
 
 This project is a bot that integrates with Bluesky, Supabase, and OpenAI to automatically respond to mentions using AI-generated content. The bot detects when it is mentioned, generates a relevant response using OpenAI, and replies to the original post on Bluesky. Additionally, it tracks which posts it has already replied to using a Supabase database.
