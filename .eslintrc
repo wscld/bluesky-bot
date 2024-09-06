@@ -9,6 +9,6 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:sonarjs/recommended"
   ],
-  "plugins": ["@typescript-eslint", "sonarjs"],
+  "plugins": ["@typescript-eslint"],
   "root": true
 }

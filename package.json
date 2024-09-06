@@ -1,7 +1,7 @@
 {
-  "name": "bsky-bot",
+  "name": "bluesky-reply-bot",
   "version": "1.0.0",
-  "description": "A template repo for building Bluesky bots",
+  "description": "",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -19,9 +19,8 @@
     "bot"
   ],
   "author": {
-    "name": "Phil Nash",
-    "email": "philnash@gmail.com",
-    "url": "https://philna.sh/"
+    "name": "Wesley",
+    "email": "weslcld@gmail.com"
   },
   "license": "MIT",
   "devDependencies": {
@@ -35,6 +34,8 @@
   },
   "dependencies": {
     "@atproto/api": "^0.2.11",
+    "@supabase/supabase-js": "^2.45.3",
+    "openai": "^4.58.0",
     "zod": "^3.21.4"
   }
 }
