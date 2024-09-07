@@ -77,6 +77,28 @@ const generateAIResponse = async (text: string, image?: string) => {
   return response.choices[0].message.content || ":(";
 };
 
+const splitText = async (text: string): Promise<{ parts: string[] }> => {
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    max_tokens: 300,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: `Você divide textos em partes, cada parte pode ter no máximo 200 caracteres e até 3 partes no máximo. Você retorna um json SEMPRE no formato { parts: string[] } com cada parte do texto`,
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: text.replace("@delete.semwhere.com", "") },
+        ],
+      },
+    ],
+  });
+
+  return JSON.parse(response.choices[0].message.content);
+};
+
 const doAuth = async () => {
   const parsed = envSchema.parse(env);
   const agent = new atpro.BskyAgent({ service: "https://bsky.social/" });
@@ -104,21 +126,53 @@ const postContent = async (
   text: string,
   post: PostView
 ) => {
+  if (text.length > 300) {
+    const threadText = await splitText(text);
+    if (threadText.parts) {
+      postThread(agent, threadText.parts, post);
+    }
+  } else {
+    console.log("replying...", post.uri);
+    await saveRepliedPost(post.uri);
+    const rt = new atpro.RichText({ text: text });
+    const postRecord = {
+      $type: "app.bsky.feed.post",
+      text: rt.text,
+      facets: rt.facets,
+      createdAt: new Date().toISOString(),
+      reply: {
+        root: { uri: post.uri, cid: post.cid },
+        parent: { uri: post.uri, cid: post.cid },
+      },
+    };
+    return await agent.post(postRecord);
+  }
+};
+
+const postThread = async (
+  agent: atpro.BskyAgent,
+  texts: string[],
+  post: PostView
+) => {
+  console.log("replying thread...", post.uri);
   await saveRepliedPost(post.uri);
-  console.log("replying...", post.uri);
-  if (text.length > 300) return;
-  const rt = new atpro.RichText({ text: text });
-  const postRecord = {
-    $type: "app.bsky.feed.post",
-    text: rt.text,
-    facets: rt.facets,
-    createdAt: new Date().toISOString(),
-    reply: {
-      root: { uri: post.uri, cid: post.cid },
-      parent: { uri: post.uri, cid: post.cid },
-    },
-  };
-  return await agent.post(postRecord);
+  let prevPost = { uri: post.uri, cid: post.cid };
+  texts?.forEach(async (text) => {
+    const rt = new atpro.RichText({ text: text });
+    const postRecord = {
+      $type: "app.bsky.feed.post",
+      text: rt.text,
+      facets: rt.facets,
+      createdAt: new Date().toISOString(),
+      reply: {
+        root: { uri: post.uri, cid: post.cid },
+        parent: { uri: prevPost.uri, cid: prevPost.cid },
+      },
+    };
+    prevPost = await agent.post(postRecord);
+  });
+
+  return prevPost;
 };
 
 const generatePost = async () => {
