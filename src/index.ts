@@ -6,22 +6,25 @@ import { Notification } from "@atproto/api/dist/client/types/app/bsky/notificati
 import { PostView } from "@atproto/api/dist/client/types/app/bsky/feed/defs.js";
 import { createClient } from "@supabase/supabase-js";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 const envSchema = z.object({
   BSKY_HANDLE: z.string().nonempty(),
   BSKY_PASSWORD: z.string().nonempty(),
   BSKY_SERVICE: z.string().nonempty().default("https://bsky.social"),
+  BOT_NAME: z.string().nonempty().default("NO_NAME"),
+  SUPABASE_URL: z.string().nonempty(),
+  SUPABASE_KEY: z.string().nonempty(),
+  OPENAI_API_KEY: z.string().nonempty(),
 });
 
-const botName = process.env.BOT_NAME;
+const parsed = envSchema.parse(env);
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const client = new OpenAI({
+  apiKey: parsed.OPENAI_API_KEY,
+});
+
+const botName = parsed.BOT_NAME;
+
+const supabase = createClient(parsed.SUPABASE_URL, parsed.SUPABASE_KEY);
 
 const getRepliedPosts = async (): Promise<
   {
@@ -63,7 +66,7 @@ const generateAIResponse = async (text: string, image?: string) => {
           ? [
               {
                 type: "text",
-                text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+                text: text.replace(`@${parsed.BSKY_HANDLE}`, ""),
               },
               {
                 type: "image_url",
@@ -75,7 +78,7 @@ const generateAIResponse = async (text: string, image?: string) => {
           : [
               {
                 type: "text",
-                text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+                text: text.replace(`@${parsed.BSKY_HANDLE}`, ""),
               },
             ],
       },
@@ -100,7 +103,7 @@ const splitText = async (text: string): Promise<{ parts: string[] }> => {
         content: [
           {
             type: "text",
-            text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+            text: text.replace(`@${parsed.BSKY_HANDLE}`, ""),
           },
         ],
       },
@@ -111,7 +114,6 @@ const splitText = async (text: string): Promise<{ parts: string[] }> => {
 };
 
 const doAuth = async () => {
-  const parsed = envSchema.parse(env);
   const agent = new atproto.BskyAgent({ service: "https://bsky.social/" });
   await agent.login({
     identifier: parsed.BSKY_HANDLE,
