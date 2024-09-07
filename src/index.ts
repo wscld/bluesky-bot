@@ -61,7 +61,10 @@ const generateAIResponse = async (text: string, image?: string) => {
         role: "user",
         content: image
           ? [
-              { type: "text", text: text.replace("@delete.semwhere.com", "") },
+              {
+                type: "text",
+                text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+              },
               {
                 type: "image_url",
                 image_url: {
@@ -69,7 +72,12 @@ const generateAIResponse = async (text: string, image?: string) => {
                 },
               },
             ]
-          : [{ type: "text", text: text.replace("@delete.semwhere.com", "") }],
+          : [
+              {
+                type: "text",
+                text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+              },
+            ],
       },
     ],
   });
@@ -90,7 +98,10 @@ const splitText = async (text: string): Promise<{ parts: string[] }> => {
       {
         role: "user",
         content: [
-          { type: "text", text: text.replace("@delete.semwhere.com", "") },
+          {
+            type: "text",
+            text: text.replace(`@${process.env.BSKY_HANDLE}`, ""),
+          },
         ],
       },
     ],
@@ -113,12 +124,16 @@ const doAuth = async () => {
 const getMentions = async (agent: atpro.BskyAgent): Promise<Notification[]> => {
   const alreadyReplied = await getRepliedPosts();
 
-  const search = await agent.listNotifications();
-  return search.data.notifications.filter(
-    (n: Notification) =>
-      n.reason === "mention" &&
-      !alreadyReplied.map((r) => r.uri).includes(n.uri)
-  );
+  if (alreadyReplied.length > 0) {
+    const search = await agent.listNotifications();
+    return search.data.notifications.filter(
+      (n: Notification) =>
+        n.reason === "mention" &&
+        !alreadyReplied.map((r) => r.uri).includes(n.uri)
+    );
+  } else {
+    return [];
+  }
 };
 
 const postContent = async (
