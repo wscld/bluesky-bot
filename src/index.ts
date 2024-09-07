@@ -1,4 +1,4 @@
-import atpro from "@atproto/api";
+import atproto from "@atproto/api";
 import OpenAI from "openai";
 import { env } from "node:process";
 import { z } from "zod";
@@ -112,7 +112,7 @@ const splitText = async (text: string): Promise<{ parts: string[] }> => {
 
 const doAuth = async () => {
   const parsed = envSchema.parse(env);
-  const agent = new atpro.BskyAgent({ service: "https://bsky.social/" });
+  const agent = new atproto.BskyAgent({ service: "https://bsky.social/" });
   await agent.login({
     identifier: parsed.BSKY_HANDLE,
     password: parsed.BSKY_PASSWORD,
@@ -121,23 +121,21 @@ const doAuth = async () => {
   return agent;
 };
 
-const getMentions = async (agent: atpro.BskyAgent): Promise<Notification[]> => {
+const getMentions = async (
+  agent: atproto.BskyAgent
+): Promise<Notification[]> => {
   const alreadyReplied = await getRepliedPosts();
 
-  if (alreadyReplied.length > 0) {
-    const search = await agent.listNotifications();
-    return search.data.notifications.filter(
-      (n: Notification) =>
-        n.reason === "mention" &&
-        !alreadyReplied.map((r) => r.uri).includes(n.uri)
-    );
-  } else {
-    return [];
-  }
+  const search = await agent.listNotifications();
+  return search.data.notifications.filter(
+    (n: Notification) =>
+      n.reason === "mention" &&
+      !alreadyReplied.map((r) => r.uri).includes(n.uri)
+  );
 };
 
 const postContent = async (
-  agent: atpro.BskyAgent,
+  agent: atproto.BskyAgent,
   text: string,
   post: PostView
 ) => {
@@ -147,9 +145,9 @@ const postContent = async (
       postThread(agent, threadText.parts, post);
     }
   } else {
-    console.log("replying...", post.uri);
+    console.log("replying in text format...", post.uri);
     await saveRepliedPost(post.uri);
-    const rt = new atpro.RichText({ text: text });
+    const rt = new atproto.RichText({ text: text });
     const postRecord = {
       $type: "app.bsky.feed.post",
       text: rt.text,
@@ -165,15 +163,15 @@ const postContent = async (
 };
 
 const postThread = async (
-  agent: atpro.BskyAgent,
+  agent: atproto.BskyAgent,
   texts: string[],
   post: PostView
 ) => {
-  console.log("replying thread...", post.uri);
+  console.log("replying in thread format...", post.uri);
   await saveRepliedPost(post.uri);
   let prevPost = { uri: post.uri, cid: post.cid };
   texts?.forEach(async (text) => {
-    const rt = new atpro.RichText({ text: text });
+    const rt = new atproto.RichText({ text: text });
     const postRecord = {
       $type: "app.bsky.feed.post",
       text: rt.text,
@@ -199,20 +197,16 @@ const generatePost = async () => {
       uris: mentions.map((m: Notification) => m.uri),
     });
 
-    posts.data.posts.forEach(async (post) => {
-      if (post.embed) {
-        const image = post.embed.images[0].fullsize;
-        const text = await generateAIResponse(
-          (post.record as { text: string }).text,
-          image
-        );
-        await postContent(agent, text, post);
-      } else {
-        const text = await generateAIResponse(
-          (post.record as { text: string }).text
-        );
-        await postContent(agent, text, post);
-      }
+    posts.data.posts.forEach(async (post: PostView) => {
+      const image = post.embed?.images
+        ? post.embed.images[0].fullsize
+        : undefined;
+
+      const text = await generateAIResponse(
+        (post.record as { text: string }).text,
+        image
+      );
+      await postContent(agent, text, post);
     });
   }
 };
