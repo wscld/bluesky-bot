@@ -113,12 +113,46 @@ const splitText = async (text: string): Promise<{ parts: string[] }> => {
   return JSON.parse(response.choices[0].message.content);
 };
 
+const cacheSession = async (session: atproto.AtpSessionData) => {
+  const { error } = await supabase
+    .from("bot_cache_session")
+    .upsert(
+      { session: session, bot_name: botName, updated_at: new Date() },
+      { onConflict: "bot_name" }
+    );
+
+  if (error) {
+    console.error(error);
+  }
+};
+
+const getCacheSession = async () => {
+  const { data, error } = await supabase
+    .from("bot_cache_session")
+    .select()
+    .eq("bot_name", botName);
+
+  if (error) {
+    console.error(error);
+  }
+
+  if (data) {
+    return data[0];
+  }
+};
+
 const doAuth = async () => {
   const agent = new atproto.BskyAgent({ service: "https://bsky.social/" });
-  await agent.login({
-    identifier: parsed.BSKY_HANDLE,
-    password: parsed.BSKY_PASSWORD,
-  });
+  const cachedSession = await getCacheSession();
+  if (cachedSession) {
+    await agent.resumeSession(cachedSession.session);
+  } else {
+    await agent.login({
+      identifier: parsed.BSKY_HANDLE,
+      password: parsed.BSKY_PASSWORD,
+    });
+    await cacheSession(agent.session);
+  }
 
   return agent;
 };
