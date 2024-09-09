@@ -145,7 +145,16 @@ const doAuth = async () => {
   const agent = new atproto.BskyAgent({ service: "https://bsky.social/" });
   const cachedSession = await getCacheSession();
   if (cachedSession) {
-    await agent.resumeSession(cachedSession.session);
+    try {
+      await agent.resumeSession(cachedSession.session);
+    } catch (e) {
+      console.error("failed to resume session");
+      await agent.login({
+        identifier: parsed.BSKY_HANDLE,
+        password: parsed.BSKY_PASSWORD,
+      });
+      await cacheSession(agent.session);
+    }
   } else {
     await agent.login({
       identifier: parsed.BSKY_HANDLE,
