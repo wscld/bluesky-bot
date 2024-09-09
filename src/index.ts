@@ -149,21 +149,21 @@ const doAuth = async () => {
       await agent.resumeSession(cachedSession.session);
     } catch (e) {
       console.error("failed to resume session");
-      await agent.login({
-        identifier: parsed.BSKY_HANDLE,
-        password: parsed.BSKY_PASSWORD,
-      });
-      await cacheSession(agent.session);
+      await doAuthRequest(agent);
     }
   } else {
-    await agent.login({
-      identifier: parsed.BSKY_HANDLE,
-      password: parsed.BSKY_PASSWORD,
-    });
-    await cacheSession(agent.session);
+    await doAuthRequest(agent);
   }
 
   return agent;
+};
+
+const doAuthRequest = async (agent: atproto.BskyAgent) => {
+  await agent.login({
+    identifier: parsed.BSKY_HANDLE,
+    password: parsed.BSKY_PASSWORD,
+  });
+  await cacheSession(agent.session);
 };
 
 const getMentions = async (
