@@ -1,3 +1,5 @@
+[![Post to Bluesky](https://github.com/wscld/bluesky-bot/actions/workflows/post.yml/badge.svg)](https://github.com/wscld/bluesky-bot/actions/workflows/post.yml)
+
 # Bot Automation Project
 
 This project is a bot that integrates with Bluesky, Supabase, and OpenAI to automatically respond to mentions using AI-generated content. The bot detects when it is mentioned, generates a relevant response using OpenAI, and replies to the original post on Bluesky. Additionally, it tracks which posts it has already replied to using a Supabase database.
